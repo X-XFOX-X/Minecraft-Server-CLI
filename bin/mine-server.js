@@ -25,7 +25,7 @@ Global flags:
   --java-min-version <n>     Minimum required Java major version (default: 17)
 
 Commands:
-  create <name> --version <ver> [--ram <ram>] [--port <port>] [--accept-eula]
+  create <name> --version <ver> [--type <paper|spigot|vanilla>] [--ram <ram>] [--port <port>] [--accept-eula]
   start <name>
   stop <name>
   restart <name>
@@ -119,11 +119,23 @@ function parseGlobalFlags(raw) {
 }
 
 function parseCreateArgs(args) {
-  const result = { ram: '2G', port: '25565', acceptEula: false, version: null };
+  const result = { 
+    type: 'vanilla', // default to vanilla
+    ram: '2G', 
+    port: '25565', 
+    acceptEula: false, 
+    version: null 
+  };
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--version') {
       result.version = args[++i];
+    } else if (a === '--type') {
+      if (i + 1 >= args.length || args[i + 1].startsWith('--')) {
+        console.error(chalk.red('Error: --type requires a value (paper, spigot, or vanilla).'));
+        process.exit(1);
+      }
+      result.type = args[++i];
     } else if (a === '--ram') {
       result.ram = args[++i];
     } else if (a === '--port') {
@@ -134,6 +146,13 @@ function parseCreateArgs(args) {
       // ignore unknown for now
     }
   }
+
+  // Validate type
+  if (!['paper', 'spigot', 'vanilla'].includes(result.type)) {
+    console.error(chalk.red(`Error: Invalid --type value "${result.type}". Must be paper, spigot, or vanilla.`));
+    process.exit(1);
+  }
+
   return result;
 }
 
@@ -169,6 +188,7 @@ async function main() {
         ram: opts.ram,
         port: opts.port,
         acceptEula: opts.acceptEula,
+        type: opts.type,
       });
       console.log(chalk.green(`Server ${name} created successfully!`));
       return;
